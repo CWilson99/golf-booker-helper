@@ -103,7 +103,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
                 # For each matching row
                 for group in nine_holes:
-                    get_booking_details(site, date, group, 9)
+                    results = get_booking_details(site, date, group, 9)
 
             except Exception as e:
                 logging.error(f"An error occurred while scraping {site['name']}: {str(e)}")
