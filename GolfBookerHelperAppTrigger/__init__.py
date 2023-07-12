@@ -56,6 +56,8 @@ def get_booking_details(site, date, group, num_holes):
     data_soup = BeautifulSoup(data_response.content, 'html.parser')
     # Grab the parsed site from metadata
     rows = data_soup.select('div.row.row-time')
+    logging.info(rows)
+    logging.info(data_url)
     for row in rows:
         # Extract time
         time = row.select_one('.time-wrapper h3').text.strip() # type: ignore
