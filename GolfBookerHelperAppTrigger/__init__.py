@@ -79,42 +79,45 @@ def get_booking_details(site, date, group, num_holes):
     return group_results
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
-    logging.info('Python HTTP trigger function processed a request.')
+    try:
+        logging.info('Python HTTP trigger function processed a request.')
 
-    date = get_param(req, 'date')
-    site = json.load(get_param(req, 'site'))
+        date = get_param(req, 'date')
+        site = json.load(get_param(req, 'site'))
 
-    logging.info(site)
+        logging.info(site)
 
-    if date:
-        # Begin our scraping
-        results = []
-        
-        try:
-            logging.info(f"Trying to scrape site with URL: {site.url}")
-            # Step 1: Get the ID from the first URL
-            id_url = f"{site.url}/guests/bookings/ViewPublicCalendar.msp?selectedDate={date}"
-            id_response = requests.get(id_url)
-            id_data = BeautifulSoup(id_response.content, 'html.parser')
-            # Select via css
-            nine_holes = id_data.select('div.feeGroupRow.nineHole')
-            eighteen_holes = id_data.select('div.feeGroupRow.eighteenHole')
+        if date:
+            # Begin our scraping
+            results = []
+            
+            try:
+                logging.info(f"Trying to scrape site with URL: {site.url}")
+                # Step 1: Get the ID from the first URL
+                id_url = f"{site.url}/guests/bookings/ViewPublicCalendar.msp?selectedDate={date}"
+                id_response = requests.get(id_url)
+                id_data = BeautifulSoup(id_response.content, 'html.parser')
+                # Select via css
+                nine_holes = id_data.select('div.feeGroupRow.nineHole')
+                eighteen_holes = id_data.select('div.feeGroupRow.eighteenHole')
 
-            # For each matching row
-            for group in nine_holes:
-                get_booking_details(site, date, group, 9)
+                # For each matching row
+                for group in nine_holes:
+                    get_booking_details(site, date, group, 9)
 
-        except Exception as e:
-            logging.error(f"An error occurred while scraping {site.name}: {str(e)}")
+            except Exception as e:
+                logging.error(f"An error occurred while scraping {site.name}: {str(e)}")
 
-        # Sort by time asc
-        results = sorted(results, key=get_time)
-        return func.HttpResponse(
-            json.dumps(results),
-            mimetype="application/json",
-        )
-    else:
-        return func.HttpResponse(
-             "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.",
-             status_code=200
-        )
+            # Sort by time asc
+            results = sorted(results, key=get_time)
+            return func.HttpResponse(
+                json.dumps(results),
+                mimetype="application/json",
+            )
+        else:
+            return func.HttpResponse(
+                "This HTTP triggered function executed successfully. Pass a name in the query string or in the request body for a personalized response.",
+                status_code=200
+            )
+    except Exception as e:
+        logging.error(f"An error occurred: {str(e)}")
