@@ -51,7 +51,7 @@ def get_booking_details(site, date, group, num_holes):
         class_number = class_number.group(1)
 
     # Step 2: Access the second URL using the obtained ID
-    data_url = f"{site.url}/guests/bookings/ViewPublicTimesheet.msp?selectedDate={date}&feeGroupId={class_number}"
+    data_url = f"{site['url']}/guests/bookings/ViewPublicTimesheet.msp?selectedDate={date}&feeGroupId={class_number}"
     data_response = requests.get(data_url)
     data_soup = BeautifulSoup(data_response.content, 'html.parser')
     # Grab the parsed site from metadata
@@ -83,7 +83,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         logging.info('Python HTTP trigger function processed a request.')
 
         date = get_param(req, 'date')
-        site = json.load(get_param(req, 'site'))
+        site = get_param(req, 'site')
 
         logging.info(site)
 
@@ -92,7 +92,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             results = []
             
             try:
-                logging.info(f"Trying to scrape site with URL: {site.url}")
+                logging.info(f"Trying to scrape site with URL: {site['url']}")
                 # Step 1: Get the ID from the first URL
                 id_url = f"{site.url}/guests/bookings/ViewPublicCalendar.msp?selectedDate={date}"
                 id_response = requests.get(id_url)
@@ -106,7 +106,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     get_booking_details(site, date, group, 9)
 
             except Exception as e:
-                logging.error(f"An error occurred while scraping {site.name}: {str(e)}")
+                logging.error(f"An error occurred while scraping {site['name']}: {str(e)}")
 
             # Sort by time asc
             results = sorted(results, key=get_time)
