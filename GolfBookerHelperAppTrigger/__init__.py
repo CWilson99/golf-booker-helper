@@ -39,11 +39,50 @@ def get_param(req, param_name):
         
     return val
 
+def get_booking_details(site, date, group, num_holes):
+    # Instantiate an empty array to store our results
+    group_results = []
+
+    class_attribute = ' '.join(group.get('class')) # type: ignore
+
+    class_number = re.search(r"feeGroupId-(\d+)", class_attribute)
+
+    if class_number:
+        class_number = class_number.group(1)
+
+    # Step 2: Access the second URL using the obtained ID
+    data_url = f"{site.url}/guests/bookings/ViewPublicTimesheet.msp?selectedDate={date}&feeGroupId={class_number}"
+    data_response = requests.get(data_url)
+    data_soup = BeautifulSoup(data_response.content, 'html.parser')
+    # Grab the parsed site from metadata
+    rows = data_soup.select('div.row.row-time')
+    for row in rows:
+        # Extract time
+        time = row.select_one('.time-wrapper h3').text.strip() # type: ignore
+        tees = row.select_one('.time-wrapper h4').text.strip() # type: ignore
+        # Extract price
+        price = row.select_one('.price').text.strip() # type: ignore
+        # Extract number of available slots
+        slots_available = len(row.select('.cell-available'))
+
+        if not "Foot Golf" in str(tees):
+            # Ignore foot golf and add it to the list
+            group_results.append({
+                "site":site,
+                "date": date,
+                "time": time,
+                "slots_available": slots_available,
+                "price": price if price else "",
+                "num_holes": num_holes
+            })
+
+    return group_results
+
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
 
     date = get_param(req, 'date')
-    url = get_param(req, 'url')
+    site = get_param(req, 'site')
 
     if date:
         # Begin our scraping
@@ -51,54 +90,19 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         
         try:
             # Step 1: Get the ID from the first URL
-            id_url = f"{url}/guests/bookings/ViewPublicCalendar.msp?selectedDate={date}"
+            id_url = f"{site.url}/guests/bookings/ViewPublicCalendar.msp?selectedDate={date}"
             id_response = requests.get(id_url)
             id_data = BeautifulSoup(id_response.content, 'html.parser')
-
-            id_groups = []
             # Select via css
-            id_groups.extend(id_data.select('div.feeGroupRow.nineHole'))
-            id_groups.extend(id_data.select('div.feeGroupRow.eighteenHole'))
-            if len(id_groups) < 1:
-                logging.warning(f"Could not locate fees on {url}")
-                return
+            nine_holes = id_data.select('div.feeGroupRow.nineHole')
+            eighteen_holes = id_data.select('div.feeGroupRow.eighteenHole')
 
             # For each matching row
-            for id_group in id_groups:
-                class_attribute = ' '.join(id_group.get('class')) # type: ignore
+            for group in nine_holes:
+                get_booking_details(site, date, group, 9)
 
-                class_number = re.search(r"feeGroupId-(\d+)", class_attribute)
-
-                if class_number:
-                    class_number = class_number.group(1)
-
-                # Step 2: Access the second URL using the obtained ID
-                data_url = f"{url}/guests/bookings/ViewPublicTimesheet.msp?selectedDate={date}&feeGroupId={class_number}"
-                print(data_url)
-                data_response = requests.get(data_url)
-                data_soup = BeautifulSoup(data_response.content, 'html.parser')
-                # Grab the parsed site from metadata
-                rows = data_soup.select('div.row.row-time')
-                for row in rows:
-                    # Extract time
-                    print(row)
-                    time = row.select_one('.time-wrapper h3').text.strip() # type: ignore
-                    tees = row.select_one('.time-wrapper h4').text.strip() # type: ignore
-                    # Extract price
-                    price = row.select_one('.price').text.strip() # type: ignore
-                    # Extract number of available slots
-                    slots_available = len(row.select('.cell-available'))
-
-                    if not "Foot Golf" in str(tees):
-                        results.append({
-                            "site":url,
-                            "date": date,
-                            "time": time,
-                            "slots_available": slots_available,
-                            "price": price if price else ""
-                        })
         except Exception as e:
-            logging.error(f"An error occurred while scraping {url}: {str(e)}")
+            logging.error(f"An error occurred while scraping {site.name}: {str(e)}")
 
         # Sort by time asc
         results = sorted(results, key=get_time)
