@@ -94,7 +94,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             try:
                 logging.info(f"Trying to scrape site with URL: {site['url']}")
                 # Step 1: Get the ID from the first URL
-                id_url = f"{site.url}/guests/bookings/ViewPublicCalendar.msp?selectedDate={date}"
+                id_url = f"{site['url']}/guests/bookings/ViewPublicCalendar.msp?selectedDate={date}"
                 id_response = requests.get(id_url)
                 id_data = BeautifulSoup(id_response.content, 'html.parser')
                 # Select via css
