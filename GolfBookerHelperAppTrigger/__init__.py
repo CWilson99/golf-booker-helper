@@ -110,6 +110,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
             # Sort by time asc
             results = sorted(results, key=get_time)
+
+            logging.info(f'Returning response: ', results)
             return func.HttpResponse(
                 json.dumps(results),
                 mimetype="application/json",
