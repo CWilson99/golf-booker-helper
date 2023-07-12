@@ -106,7 +106,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 # For each matching row
                 for group in nine_holes:
                     # Skip foot golf
-                    golf_type = row.select_one('.row-heading h3').text.strip() # type: ignore
+                    golf_type = group.select_one('.row-heading h3').text.strip() # type: ignore
                     if not 'Foot Golf' in golf_type:
                         results.extend(get_booking_details(site, date, group, 9))
 
