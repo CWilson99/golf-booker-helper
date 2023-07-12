@@ -110,6 +110,13 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                     if not 'Foot Golf' in golf_type:
                         results.extend(get_booking_details(site, date, group, 9))
 
+                # For each matching row
+                for group in eighteen_holes:
+                    # Skip foot golf
+                    golf_type = group.select_one('.row-heading h3').text.strip() # type: ignore
+                    if not 'Foot Golf' in golf_type:
+                        results.extend(get_booking_details(site, date, group, 18))
+
             except Exception as e:
                 logging.error(f"An error occurred while scraping {site['name']}: {str(e)}")
 
